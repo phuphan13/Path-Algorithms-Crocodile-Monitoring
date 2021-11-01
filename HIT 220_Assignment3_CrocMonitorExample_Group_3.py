@@ -47,7 +47,6 @@ class CrocMonitor:
         self.Finish = 0
         self.paths = []
         
-        
         self.readData()
         self.storeDistance()
 
@@ -88,7 +87,7 @@ class CrocMonitor:
     
     """
     Function: storeDistance(self)
-        Purpose: store distance of all adjacient vertices
+        Purpose: store distance of all adjacent vertices
         Input: None
         Output: None
         Example: storeDistance()
@@ -172,13 +171,12 @@ class CrocMonitor:
 
     """
     Function: findPath(self, a, b)
-        Purpose: finding the shortest path from a to be using Dijkstra algorithm
+        Purpose: finding the shortest path from a to
         Input: location a and b
         Output: shortest path and distance
         Example: findPath("15","18") -> ["15","16","18"], 8.94
     
-        This function finds the shortest path from a to be and based on the Dijkstra algorithm 
-    
+        This function finds the shortest path from a to b, and based on the Dijkstra algorithm 
     
     """
     def findPath(self,a,b):
@@ -246,12 +244,12 @@ class CrocMonitor:
         distance = 0
         
         #all points on path between two locations, and the exhaustive search (i.e. neighbours of internal)
-        pointList,path = self.findScope(a, b)
+        pointList, path = self.findScope(a, b)
         
         print("All points for rangers to inspect: ", pointList)
         print("Exhaustive search path: ", path)
         for i in range(len(path)-1):
-            #get the distance between two adjacient vertices through location matrix
+            #get the distance between two adjacent vertices through location matrix
             d = self.matrix[self.points.index(path[i])][self.points.index(path[i+1])]  
 
             #add-up the distance of the path
@@ -268,7 +266,7 @@ class CrocMonitor:
         #calcualte costing given assumed speed.
         costing = distance/speed 
         
-        print("Distance (km): %.2f"%distance,"\nSpeed (km/h): %.2f"%speed,"\nCost (units of hour): %.2f"%costing)
+        print("Distance (km): %.2f"%distance,". Speed (km/h): %.2f"%speed,". Cost (units of hour): %.2f"%costing)
         
         return costing,path
         
@@ -331,10 +329,13 @@ class CrocMonitor:
        
        for i in range(len(self.points)):
              
+            #distance between the beach and any point
             d = self.computeDistance(beach, self.points[i])
             
+            #if less than radius
             if d > 0 and d <= x:
                 
+                #get the number of crocs
                 j = np.where(l==self.points[i])[0][0] 
                                 
                 if self.locationList[j][3] != "":
@@ -355,36 +356,48 @@ class CrocMonitor:
        return list
     
     """
-    Function locatOptimalBlockage(self, a, b)
-        Purpose:
-        Input: location a and b
-        Output:
-        Example:
+    Function locatOptimalBlockage(self, beach, radius, list)
+        Purpose: find the nearest point to the beach, all shortest path from other point within radius to that nearest point
+        Input: beach, radius and the list of points within the radius of the beach.
+        Output: nearest point, list of shortest path to the nearest point and no of crocs.
+        Example: locateOptimalBlockage("B3","10",list)
         
          
     """
     def locateOptimalBlockage(self,beach,radius, list):
     # return the point blocked eg A1 and the increase in protection provided using some weighting
-        point="A1"
+        point=""
         protection=1
+        crocs = 0
+        paths = []
         
         if len(list) == 0:
-            print(f"No points within the radius of {radius} of {beach}")
-            return
+            return "", None
         
         print(f"\nAll locations and number of crocs are within the radius {radius} of {beach}")
         for i in range(len(list)-1):print(list[i])
         
         #nearest point to the beach (the last item in list)
         point = list[len(list)-1][0]         
-        print(f"Nearest point to the beach {beach} is: {point}")
         
-        for j in range(len(list)-1):
-            if list[j][0] != point:
-                self.FindAllPaths(list[j][0],point)
-                #print(self.paths)
-
-        return point, protection
+        #convert to list for counting the crocs
+        #dic = {l[0]:l[1] for l in list}
+        dic = dict(list)
+        #find the shortest path from all points within radius to the nearest point and accumulate the crocs from the path
+        for d in dic:
+            if d != point:
+                path,_ = self.findPath(d,point)
+                crocs = 0
+                for p in path:
+                    if p not in dic: 
+                        crocs = 0
+                        break
+                    crocs += dic[p]
+                
+                if crocs !=0:    
+                    paths.append([path,"Crocs: %.2f"%crocs])
+       
+        return point, paths #protection
 
 
     """
@@ -509,7 +522,7 @@ class CrocMonitor:
                         expath.insert(len(expath)-1,self.points[k])
                         expath.insert(len(expath)-1,path[i]) #backtrack
                
-        #Example findScope ("15","18")
+        #Example findScope ("15","18") Dr. Cat's comment
             #paths are [15,16,18] and [15,16,17,19,20]
             #shortest path [15,16,18]
             #add neighbours [15,16,17,18]
@@ -619,7 +632,9 @@ Function: Question1()
 """    
 def Question1():
     
-    print("\nQuestion 1 - Exhaustive search: ")
+    print("\nQuestion 1 - Exhaustive path and compute Costing: ")
+    print("Assumption:\nGiven two locations, we find the shortest path between these locations.\nThen we find all points on this path and build the exhaustive path for rangers to inspect.\nExhaustive path is built based by adding the neighbours of internal points on shortest path")
+    print("\nInput two locations, example: 15 and 18")
     location1 = input("Location 1: ")
     location2 = input("Location 2: ")
     
@@ -633,10 +648,11 @@ Funtion: Question2()
 def Question2():
     
     print("\nQuestion 2 - Improve Distance: ")
+    print("\nAssumption:\nGiven two locations, we find the shortest path between these locations.\nThen we traverse from the begining point to other points on the path until we reach any point having its neighbours (possibly to put the block) and calculate the ratio of its distance against the shortest path distance.\nRangers will decide whether it is worth to put the blockage.")
+    print("\nInput two locations, example: 19 and 22")
     location1 = input("Location 1: ")
     location2 = input("Location 2: ")
     
-    #pending as need to clarify with Dr. Cat
     points = cm.improveDistance(location1, location2)
     
     if len(points) == 0:
@@ -654,6 +670,7 @@ Function: Question3()
 def Question3():
     
     print("\nQuestion 3 - MinTime: ")
+    print("\nInput two locations, example: 19 and 22")
     location1 = input("Location 1: ")
     location2 = input("Location 2: ")
     path, trace, distance,time = cm.minTime(location1, location2)
@@ -664,13 +681,20 @@ def Question3():
     print("Time value (units of hour): %.2f" %time)
     
     print("\nQuestion 3 - Extension")
-    print("Assumption: ")
-    print("Input the beach and radius. For example B1 and 10")
+    print("Assumption:\nGiven the radius we find the nearest location to the beach. Then we find all the shortest paths from other points within radius of the beach to that nearest point and the accumulated number of crocs. Ranger will consider where to put the blockage. ")
+    print("\nInput the beach and radius. For example B3 and 10")
     beach = input("Beach: ")
     radius = int(input("Radius: "))
     list = cm.countCroc(beach,radius)
      
-    cm.locateOptimalBlockage(beach, radius,list)
+    point, paths = cm.locateOptimalBlockage(beach, radius,list)
+    if point != "":
+        print(f"\nNearest point to the beach {beach} is: {point}")
+        print("Shortest path from other points within radius of the beach to the nearest point is below.\nRangers will consider to put the blockage")
+        for p in paths:
+            print(p[0],"-", p[1])
+    else:
+        print(f"No points within the radius of {radius} of {beach}")
     
     input("\nPress Enter to continue...")
     
